@@ -1,0 +1,47 @@
+services:
+  shoebox:
+    build: .
+    image: shoebox:latest
+    container_name: shoebox
+    restart: unless-stopped
+    ports:
+      # 默认只绑本机。部署到服务器要对外提供时，在 .env 里写
+      # SHOEBOX_BIND=0.0.0.0:3000 —— 别把默认值改成 0.0.0.0
+      - "${SHOEBOX_BIND:-127.0.0.1:3000}:3000"
+    volumes:
+      # 数据库和页面图片都在宿主的 ./data 下，直接复制这个目录就是一次备份
+      - ./data:/app/data
+    # 访问密码等敏感配置从 .env 读，别直接写在这个文件里
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      # 数据必须落在挂载卷里。.env.example 里的 DB_PATH / STORAGE_DIR 是给本地开发用的
+      # 相对路径，如果原样复制成 .env，会把文件写进容器自己的层、重建就丢——这里强制覆盖。
+      DB_PATH: /app/data/shoebox.db
+      STORAGE_DIR: /app/data/storage
+      # V8 看到容器限制后会把堆划得比容器还大，于是堆涨过头时是被 OOM killer
+      # 杀掉而不是先触发 GC。显式压低才有护栏。
+      # 上传大 PDF 时要在服务端缓冲整个请求体，所以给到 320 MB。
+      NODE_OPTIONS: >-
+        --max-old-space-size=320
+        --v8-pool-size=2
+      # libuv 线程池默认 4 条，这里只有 node:sqlite 的同步调用，用不上
+      UV_THREADPOOL_SIZE: "2"
+    # 硬上限兜底：真漏内存时容器被杀掉重启，而不是把宿主拖下水
+    mem_limit: 512m
+    memswap_limit: 512m
+    healthcheck:
+      # 登录页不需要鉴权，正好用它判活
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3

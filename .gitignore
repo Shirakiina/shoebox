@@ -1,0 +1,20 @@
+node_modules/
+/.next/
+/.next-*/
+/out/
+
+# 资料文件和数据库，只在本机
+/data/
+/storage/
+
+# .env.example 之外的环境文件一律不进仓库：服务器上的 .env 里有访问密码
+/.env
+/.env.local
+/.env.*.local
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+
+# 这几条要锚定到根：不带前导斜杠的话，src/lib/storage/ 之类
+# 同名目录也会被一起忽略
+/public/pdf.worker.min.mjs

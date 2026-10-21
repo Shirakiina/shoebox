@@ -1,0 +1,28 @@
+node_modules
+.next
+.next-*
+out
+npm-debug.log*
+
+# 资料和数据库不进镜像，运行时通过挂载提供
+data
+storage
+
+# postinstall 会在镜像里重新生成
+public/pdf.worker.min.mjs
+
+.git
+.gitignore
+.claude
+README.md
+README.en.md
+LICENSE
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+.DS_Store
+.env
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
